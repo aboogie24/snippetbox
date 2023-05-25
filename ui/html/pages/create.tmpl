@@ -12,8 +12,10 @@
     <div>
         <label>Content:</label>
         {{with .Form.FieldErrors.content}} 
-            <textarea name='content'></textarea>
+            <label class='error'>{{.}}</label>
         {{end}}
+
+        <textarea name='content'></textarea>
     </div>
     <div>
         <label>Delete in:</label>
