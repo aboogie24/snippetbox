@@ -12,6 +12,13 @@ import (
 	"snippetbox.alfredbrowniii.io/internal/models"
 )
 
+type snippetCreateForm struct {
+	Title       string
+	Content     string
+	Expires     int
+	fieldErrors map[string]string
+}
+
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 	snippets, err := app.snippets.Latest()
@@ -98,24 +105,31 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	fieldErrors := make(map[string]string)
+	form := snippetCreateForm{
+		Title:       r.PostForm.Get("title"),
+		Content:     r.PostForm.Get("content"),
+		Expires:     expires,
+		fieldErrors: map[string]string{},
+	}
+
 	if strings.TrimSpace(title) == "" {
-		fieldErrors["title"] = "This field cannot be blank"
+		form.fieldErrors["title"] = "This field cannot be blank"
 	} else if utf8.RuneCountInString(title) > 100 {
-		fieldErrors["title"] = "This field cannot be more then 100 characters long"
+		form.fieldErrors["title"] = "This field cannot be more then 100 characters long"
 	}
 
 	if strings.TrimSpace(content) == "" {
-		fieldErrors["content"] = "This field cannot be blank"
+		form.fieldErrors["content"] = "This field cannot be blank"
 	}
 
 	if expires != 1 && expires != 7 && expires != 365 {
-		fieldErrors["expires"] = "This field must be 1, 7 or 365"
+		form.fieldErrors["expires"] = "This field must be 1, 7 or 365"
 	}
 
-	if len(fieldErrors) > 0 {
-		fmt.Fprint(w, fieldErrors)
-		return
+	if len(form.fieldErrors) > 0 {
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, http.StatusUnprocessableEntity, "create.tmpl", data)
 	}
 	id, err := app.snippets.Insert(title, content, expires)
 	if err != nil {
@@ -130,6 +144,10 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
+
+	data.Form = snippetCreateForm{
+		Expires: 365,
+	}
 
 	app.render(w, http.StatusOK, "create.tmpl", data)
 
