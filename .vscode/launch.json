@@ -26,10 +26,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/cmd/web",
-            "cwd": "/Users/aboogie/alfred/snippetbox"
-            
-            
-            
+            "cwd": "/Users/aboogie/alfred/snippetbox" 
         }
     ]
 }
