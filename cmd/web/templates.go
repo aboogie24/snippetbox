@@ -2,10 +2,12 @@ package main
 
 import (
 	"html/template"
+	"io/fs"
 	"path/filepath"
 	"time"
 
 	"snippetbox.alfredbrowniii.io/internal/models"
+	"snippetbox.alfredbrowniii.io/ui"
 )
 
 type templateData struct {
@@ -19,7 +21,11 @@ type templateData struct {
 }
 
 func humanDate(t time.Time) string {
-	return t.Format("02 Jan 2066 at 15:04")
+
+	if t.IsZero() {
+		return ""
+	}
+	return t.UTC().Format("02 Jan 2006 at 15:04")
 }
 
 var functions = template.FuncMap{
@@ -30,7 +36,7 @@ func newTemplateCache() (map[string]*template.Template, error) {
 	// Initialize new map to act as cache.
 	cache := map[string]*template.Template{}
 
-	pages, err := filepath.Glob("./ui/html/pages/*.tmpl")
+	pages, err := fs.Glob(ui.Files, "html/pages/*.tmpl")
 	if err != nil {
 		return nil, err
 	}
@@ -42,22 +48,28 @@ func newTemplateCache() (map[string]*template.Template, error) {
 		//Extract file name and assign to variable
 		name := filepath.Base(page)
 
-		ts, err := template.New(name).Funcs(functions).ParseFiles("./ui/html/base.tmpl")
+		patterns := []string{
+			"html/base.tmpl",
+			"html/partials/*.tmpl",
+			page,
+		}
+
+		ts, err := template.New(name).Funcs(functions).ParseFS(ui.Files, patterns...)
 		if err != nil {
 			return nil, err
 		}
 
-		tsa, err := ts.ParseGlob("./ui/html/partials/*.tmpl")
-		if err != nil {
-			return nil, err
-		}
+		// tsa, err := ts.ParseGlob("./ui/html/partials/*.tmpl")
+		// if err != nil {
+		// 	return nil, err
+		// }
 
-		tsb, err := tsa.ParseFiles(page)
-		if err != nil {
-			return nil, err
-		}
+		// tsb, err := tsa.ParseFiles(page)
+		// if err != nil {
+		// 	return nil, err
+		// }
 
-		cache[name] = tsb
+		cache[name] = ts
 	}
 
 	return cache, nil
